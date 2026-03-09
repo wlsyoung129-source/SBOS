@@ -28,7 +28,8 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}html{touch-action:manipulation;}
-body{font-family:var(--font);background:var(--bg0);color:var(--text);display:flex;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;}
+html{max-width:100vw;overflow-x:hidden;}
+body{font-family:var(--font);background:var(--bg0);color:var(--text);display:flex;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;max-width:100vw;overflow-x:hidden;}
 
 /* ── PWA / 아이폰 safe area ── */
 body { padding-bottom: env(safe-area-inset-bottom); }
@@ -86,6 +87,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 @media (max-width: 768px) {
   /* ── 기본 폰트 크기 ↑ ── */
   body { font-size: 16px !important; }
+  html, body { overflow-x: hidden !important; max-width: 100vw !important; width: 100vw !important; }
 
   /* ── 사이드바: 슬라이드 오버레이 ── */
   .sb {
@@ -101,7 +103,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   .sbi-badge { font-size: 10px !important; padding: 2px 7px !important; }
 
   /* ── 메인 영역 ── */
-  .main { width: 100%; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; overscroll-behavior-y: contain; touch-action: pan-y; }
+  .main { width: 100vw !important; max-width: 100vw !important; min-width: 0 !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; overscroll-behavior-y: contain; touch-action: pan-y; flex: 1 !important; }
   .page { padding: 60px 14px 100px !important; }
 
   /* ── 페이지 헤더 ── */
