@@ -131,7 +131,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
     padding: 12px 14px !important;
     min-height: 44px;
   }
-  textarea { min-height: 60px !important; overflow: hidden !important; }
+  textarea { min-height: 60px !important; }
   select { padding: 11px 12px !important; min-height: 44px; }
 
   /* ── 탭 크게 ── */
@@ -243,7 +243,7 @@ input[type=text],textarea,select{background:var(--bg2);border:1px solid rgba(255
 input[type=text]:focus,textarea:focus,select:focus{border-color:rgba(212,168,83,.4);}
 input[type=text]::placeholder,textarea::placeholder{color:var(--text3);}
 input[type=text]{padding:7px 11px;width:100%;}
-textarea{padding:9px 11px;resize:none;width:100%;line-height:1.65;overflow:hidden;box-sizing:border-box;}
+textarea{padding:9px 11px;resize:none;width:100%;line-height:1.65;overflow-y:auto;box-sizing:border-box;}
 select{padding:6px 9px;cursor:pointer;color:var(--text2);}
 select option{background:var(--bg2);}
 
@@ -373,7 +373,7 @@ select option{background:var(--bg2);}
 .note-body-tabs{display:flex;gap:2px;margin-top:10px;margin-bottom:8px;background:var(--bg3);border-radius:6px;padding:2px;}
 .note-body-tab{flex:1;padding:4px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;text-align:center;color:var(--text3);transition:all .12s;}
 .note-body-tab.active{background:var(--bg2);color:var(--gold);}
-.note-text-editor{width:100%;min-height:120px;font-size:13px;line-height:1.75;resize:none;overflow:hidden;background:var(--bg3);border:1px solid rgba(255,255,255,.06);border-radius:var(--r8);color:var(--text);padding:10px 12px;font-family:var(--font);outline:none;transition:border-color .15s;margin-top:4px;}
+.note-text-editor{width:100%;min-height:120px;font-size:13px;line-height:1.75;resize:none;overflow-y:auto;field-sizing:content;background:var(--bg3);border:1px solid rgba(255,255,255,.06);border-radius:var(--r8);color:var(--text);padding:10px 12px;font-family:var(--font);outline:none;transition:border-color .15s;margin-top:4px;}
 .note-text-editor:focus{border-color:rgba(212,168,83,.35);}
 .note-text-preview{min-height:60px;font-size:13px;line-height:1.75;color:var(--text2);white-space:pre-wrap;padding:10px 12px;background:var(--bg3);border-radius:var(--r8);border:1px solid rgba(255,255,255,.04);margin-top:4px;cursor:text;}
 .note-text-preview:empty::before{content:'클릭하여 편집...';color:var(--text3);}
@@ -3213,10 +3213,9 @@ function toggleRefBody(id){
   const isOpen=body.classList.toggle('open');
   if(arrow)arrow.textContent=isOpen?'▼':'▶';
   if(isOpen){
-    const ta=document.getElementById('nbody-'+id);
-    if(ta){
-      // transition(0.4s) 완료 후 높이 계산
-      setTimeout(()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';}, 420);
+    if(!CSS.supports('field-sizing','content')){
+      const ta=document.getElementById('nbody-'+id);
+      if(ta){ setTimeout(()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';},420); }
     }
   }
 }
@@ -3928,11 +3927,15 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(swUrl).catch(()=>{});
 }
 
-/* ── textarea 자동 높이 조절 (모바일/PC 공통) ── */
+/* ── textarea 자동 높이 조절 (field-sizing 미지원 브라우저 fallback) ── */
 (function(){
+  // field-sizing: content 지원 여부 확인
+  var supportsFieldSizing = CSS.supports('field-sizing','content');
+  if(supportsFieldSizing) return; // 최신 브라우저는 CSS만으로 처리
+
   function autoResize(el){
-    // 부모가 숨겨진 상태(max-height:0)면 건너뜀
-    if(el.offsetParent === null && el.closest('.ncard-ref-body:not(.open)')) return;
+    var parent = el.closest('.ncard-ref-body');
+    if(parent && !parent.classList.contains('open')) return; // 닫힌 카드는 건너뜀
     el.style.height='auto';
     el.style.height=el.scrollHeight+'px';
   }
@@ -3941,12 +3944,10 @@ if ('serviceWorker' in navigator) {
     el._arAttached=true;
     autoResize(el);
     el.addEventListener('input',function(){ autoResize(el); });
-    el.addEventListener('focus',function(){ autoResize(el); });
   }
   function initAll(){
     document.querySelectorAll('textarea').forEach(attachAutoResize);
   }
-  // 동적으로 생성되는 textarea(노트카드, 목표 등) 처리
   var mo=new MutationObserver(function(mutations){
     mutations.forEach(function(m){
       m.addedNodes.forEach(function(node){
