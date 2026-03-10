@@ -28,8 +28,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}html{touch-action:manipulation;}
-html{max-width:100vw;overflow-x:hidden;}
-body{font-family:var(--font);background:var(--bg0);color:var(--text);display:flex;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;max-width:100vw;overflow-x:hidden;}
+body{font-family:var(--font);background:var(--bg0);color:var(--text);display:flex;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;}
 
 /* ── PWA / 아이폰 safe area ── */
 body { padding-bottom: env(safe-area-inset-bottom); }
@@ -87,7 +86,6 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 @media (max-width: 768px) {
   /* ── 기본 폰트 크기 ↑ ── */
   body { font-size: 16px !important; }
-  html, body { overflow-x: hidden !important; max-width: 100vw !important; width: 100vw !important; }
 
   /* ── 사이드바: 슬라이드 오버레이 ── */
   .sb {
@@ -103,7 +101,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   .sbi-badge { font-size: 10px !important; padding: 2px 7px !important; }
 
   /* ── 메인 영역 ── */
-  .main { width: 100vw !important; max-width: 100vw !important; min-width: 0 !important; overflow-x: hidden !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; overscroll-behavior-y: contain; touch-action: pan-y; flex: 1 !important; }
+  .main { width: 100%; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; overscroll-behavior-y: contain; touch-action: pan-y; }
   .page { padding: 60px 14px 100px !important; }
 
   /* ── 페이지 헤더 ── */
@@ -1787,11 +1785,46 @@ function renderToday() {
         <span class="tag ${p.priority==='high'?'tr':p.priority==='mid'?'to':'tgray'}" style="font-size:8px">${p.priority==='high'?'높음':p.priority==='mid'?'보통':'낮음'}</span>
       </div>
     </div>`).join('');
-  if(!todayT.length && !planDay.length){
+  // ── 어제 미완료 항목 ──
+  const yesterday = (()=>{ const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
+  const overdueT = S.todos.filter(t => {
+    if (t.done) return false;
+    const s = t.startDate || t.scheduledDate || '';
+    const e = t.endDate || t.scheduledDate || '';
+    if (s && e) return e < now_str;
+    return false;
+  });
+  const overdueP = (S.plannerItems.day||[]).filter(p => !p.done && p.created && p.created < now_str);
+  const overdueHtml = overdueT.map(t=>`
+    <div class="item" style="opacity:.85">
+      <div class="chk ${t.done?'on':''}" onclick="toggleTodo(${t.id})">${t.done?'✓':''}</div>
+      <div class="it ${t.done?'done':''}">${escHtml(t.text)}</div>
+      <div class="imeta">
+        <span class="tag ${tagCls(t.tag||'action')}">${t.tag||'action'}</span>
+        <span class="tag tr" style="font-size:8px">미완료</span>
+        <span class="idel" onclick="delTodo(${t.id})">✕</span>
+      </div>
+    </div>`).join('');
+  const overduePHtml = overdueP.map((p,i)=>`
+    <div class="item" style="border-left:2px solid var(--red);padding-left:8px;opacity:.85">
+      <div class="chk ${p.done?'on':''}" onclick="togglePlanItem('day',${i});renderToday()">${p.done?'✓':''}</div>
+      <div class="it ${p.done?'done':''}">${escHtml(p.text)}</div>
+      <div class="imeta">
+        <span class="tag tr" style="font-size:8px">미완료</span>
+        <span class="tag tb" style="font-size:8px">🗓 플래너</span>
+      </div>
+    </div>`).join('');
+  const overdueSection = (overdueT.length || overdueP.length) ? `
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(210,120,120,.25)">
+      <div style="font-family:var(--mono);font-size:8.5px;color:var(--red);letter-spacing:.1em;padding:0 0 6px">── 📌 이전 미완료 ──</div>
+      ${overdueHtml}${overduePHtml}
+    </div>` : '';
+
+  if(!todayT.length && !planDay.length && !overdueT.length && !overdueP.length){
     el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">할 일을 추가하거나 플래너에서 일간 계획을 세워보세요</div>';
     return;
   }
-  el.innerHTML = todoHtml + (planHtml ? `<div style="font-family:var(--mono);font-size:8.5px;color:var(--blue);letter-spacing:.1em;padding:6px 0 3px;margin-top:4px">── 플래너 일간 항목 ──</div>${planHtml}` : '');
+  el.innerHTML = todoHtml + (planHtml ? `<div style="font-family:var(--mono);font-size:8.5px;color:var(--blue);letter-spacing:.1em;padding:6px 0 3px;margin-top:4px">── 플래너 일간 항목 ──</div>${planHtml}` : '') + overdueSection;
 }
 
 function addTodayTask() {
