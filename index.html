@@ -365,7 +365,7 @@ select option{background:var(--bg2);}
 .ref-img-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;}
 .ref-img-wrap:hover .ref-img-del{opacity:1;}
 .ncard-ref-body{overflow:hidden;max-height:0;transition:max-height .4s ease;}
-.ncard-ref-body.open{max-height:1200px;}
+.ncard-ref-body.open{max-height:9999px;}
 .ncard-ref-preview{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;}
 .ncard-ref-thumb{width:28px;height:28px;border-radius:3px;object-fit:cover;border:1px solid rgba(255,255,255,.08);}
 
@@ -3075,9 +3075,9 @@ function renderNotes(){
       ${noteBody}
     </div>`;
   }).join('');
-  // 렌더링 후 textarea 높이 자동 복원
+  // 렌더링 후 열린 노트의 textarea 높이 복원
   requestAnimationFrame(()=>{
-    el.querySelectorAll('textarea').forEach(ta=>{
+    document.querySelectorAll('.ncard-ref-body.open textarea').forEach(ta=>{
       ta.style.height='auto';
       ta.style.height=ta.scrollHeight+'px';
     });
@@ -3214,7 +3214,10 @@ function toggleRefBody(id){
   if(arrow)arrow.textContent=isOpen?'▼':'▶';
   if(isOpen){
     const ta=document.getElementById('nbody-'+id);
-    if(ta){requestAnimationFrame(()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});}
+    if(ta){
+      // transition(0.4s) 완료 후 높이 계산
+      setTimeout(()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';}, 420);
+    }
   }
 }
 
@@ -3928,6 +3931,8 @@ if ('serviceWorker' in navigator) {
 /* ── textarea 자동 높이 조절 (모바일/PC 공통) ── */
 (function(){
   function autoResize(el){
+    // 부모가 숨겨진 상태(max-height:0)면 건너뜀
+    if(el.offsetParent === null && el.closest('.ncard-ref-body:not(.open)')) return;
     el.style.height='auto';
     el.style.height=el.scrollHeight+'px';
   }
