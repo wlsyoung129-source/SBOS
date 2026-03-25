@@ -268,11 +268,13 @@ select option{background:var(--bg2);}
 .item{animation:fi .2s ease;}
 .chk{width:15px;height:15px;border:1.5px solid var(--text3);border-radius:3px;flex-shrink:0;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .12s;}
 .chk.on{background:var(--green);border-color:var(--green);color:#fff;}
-.it{flex:1;font-size:13px;line-height:1.55;}
+.it{flex:1;font-size:13px;line-height:1.55;cursor:text;}
 .it.done{text-decoration:line-through;color:var(--text3);}
 .imeta{display:flex;gap:5px;align-items:center;margin-left:auto;}
 .idel{font-size:11px;color:var(--text3);cursor:pointer;opacity:0;padding:2px 3px;transition:opacity .12s;}
 .item:hover .idel{opacity:1;}
+/* ── 인라인 편집 ── */
+.it-edit-inp{flex:1;font-size:13px;font-family:var(--font);background:var(--bg2);border:1px solid rgba(212,168,83,.4);border-radius:5px;color:var(--text);padding:2px 7px;outline:none;line-height:1.55;}
 
 /* ── TAGS ── */
 .tag{font-family:var(--mono);font-size:9.5px;padding:1px 7px;border-radius:8px;white-space:nowrap;}
@@ -831,8 +833,8 @@ input[type=date]::-webkit-calendar-picker-indicator:hover{opacity:1;}
     <div class="fs s4" onclick="pickFlow(this)"><div class="fsn">04</div><div class="fst">점검</div><div class="fsd">시스템 갱신</div><div class="fsu"></div></div>
   </div>
   <div class="stat-row">
-    <div class="stat"><div class="stat-n" id="st-total" style="color:var(--text)">0</div><div class="stat-l">전체</div></div>
-    <div class="stat"><div class="stat-n" id="st-done" style="color:var(--green)">0</div><div class="stat-l">완료</div></div>
+    <div class="stat"><div class="stat-n" id="st-total" style="color:var(--text)">0</div><div class="stat-l">오늘 할 일</div></div>
+    <div class="stat"><div class="stat-n" id="st-done" style="color:var(--green)">0</div><div class="stat-l">오늘 완료</div></div>
     <div class="stat"><div class="stat-n" id="st-inbox" style="color:var(--red)">0</div><div class="stat-l">수집함</div></div>
     <div class="stat"><div class="stat-n" id="st-pct" style="color:var(--gold)">0%</div><div class="stat-l">달성률</div></div>
   </div>
@@ -1114,7 +1116,7 @@ input[type=date]::-webkit-calendar-picker-indicator:hover{opacity:1;}
       <!-- 새 항목 추가 -->
       <div style="display:flex;gap:7px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)">
         <input id="rev-new-item" type="text" placeholder="새 항목 추가..." style="flex:1"
-          onkeydown="if(event.key==='Enter'&&!event.isComposing)addRevItem()">
+          onkeyup="if(event.key==='Enter'&&!event.isComposing)addRevItem()">
         <button class="btn btn-gold btn-sm" onclick="addRevItem()">+ 추가</button>
       </div>
     </div>
@@ -1171,7 +1173,7 @@ input[type=date]::-webkit-calendar-picker-indicator:hover{opacity:1;}
   <div id="compass-tab-goals" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
     <div style="margin-bottom:12px;display:flex;gap:7px;flex:0 0 auto;flex-wrap:wrap">
       <input id="new-goal-inp" type="text" placeholder="새 목표 이름..." style="flex:1;min-width:160px"
-        onkeydown="if(event.key==='Enter'&&!event.isComposing)addGoal()">
+        onkeyup="if(event.key==='Enter'&&!event.isComposing)addGoal()">
       <div class="goal-date-group">
         <label>시작</label>
         <input id="new-goal-start" type="date" style="width:148px">
@@ -1452,22 +1454,27 @@ function showTokenModal() {
   const modal = document.createElement('div');
   modal.id = 'gh-token-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  const delBtn = existing ? `<div style="text-align:center;margin-top:10px"><button onclick="localStorage.removeItem('gh_token');window.GH_TOKEN='';document.getElementById('gh-token-modal').remove();setSaveStatus('토큰 삭제됨','var(--text3)');" style="background:transparent;border:none;color:#7e7870;font-size:11px;cursor:pointer;text-decoration:underline">토큰 삭제</button></div>` : '';
   modal.innerHTML = `
-    <div style="background:#1a1917;border:1px solid rgba(212,168,83,.3);border-radius:16px;padding:28px;width:320px;max-width:90vw">
-      <div style="font-size:22px;margin-bottom:8px">🔑 GitHub 토큰 설정</div>
-      <div style="font-size:12px;color:#7e7870;margin-bottom:16px;line-height:1.6">
-        GitHub Personal Access Token을 입력하면<br>폰·컴퓨터 간 데이터가 자동 동기화돼요.
+    <div style="background:#1a1917;border:1px solid rgba(212,168,83,.3);border-radius:16px;padding:28px;width:340px;max-width:92vw">
+      <div style="font-size:18px;font-weight:700;margin-bottom:6px;color:#f2ede5">☁️ GitHub 동기화 설정</div>
+      <div style="font-size:12px;color:#9e9890;margin-bottom:10px;line-height:1.7">
+        Token을 등록하면 폰·컴퓨터 간 자동 동기화됩니다.<br>GitHub 계정이 없다면 <strong style="color:#c8c0b2">건너뛰기</strong>를 누르세요 — 기기 내 저장은 그대로 유지됩니다.
+      </div>
+      <div style="background:rgba(210,120,120,.1);border:1px solid rgba(210,120,120,.22);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:11px;color:#d27878;line-height:1.6">
+        ⚠️ 토큰은 이 기기의 브라우저 저장소에 보관됩니다. 공용 PC에서는 사용을 권장하지 않습니다. GitHub에서 Contents 읽기/쓰기 권한만 있는 fine-grained 토큰을 권장합니다.
       </div>
       <input id="gh-token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"
-        style="width:100%;padding:12px;background:#222;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#f2ede5;font-size:14px;margin-bottom:12px"
+        style="width:100%;padding:12px;background:#222;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#f2ede5;font-size:14px;margin-bottom:12px;box-sizing:border-box"
         value="${existing}">
       <div style="display:flex;gap:8px">
         <button onclick="saveToken()" style="flex:1;padding:11px;background:rgba(212,168,83,.15);border:1px solid rgba(212,168,83,.4);border-radius:8px;color:#d4a853;font-size:14px;cursor:pointer;font-weight:700">저장</button>
-        <button onclick="document.getElementById('gh-token-modal').remove()" style="padding:11px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#7e7870;font-size:14px;cursor:pointer">취소</button>
+        <button onclick="document.getElementById('gh-token-modal').remove()" style="padding:11px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#9e9890;font-size:13px;cursor:pointer">지금은 건너뛰기</button>
       </div>
+      ${delBtn}
     </div>`;
   document.body.appendChild(modal);
-  setTimeout(() => document.getElementById('gh-token-input').focus(), 100);
+  setTimeout(() => document.getElementById('gh-token-input')?.focus(), 100);
 }
 
 function saveToken() {
@@ -1837,8 +1844,8 @@ function renderToday() {
   const allTodayCount = todayT.length + planDay.length;
   const allDone = todayT.filter(t=>t.done).length + planDay.filter(p=>p.done).length;
   const pct = allTodayCount ? Math.round(allDone/allTodayCount*100) : 0;
-  document.getElementById('st-total').textContent = S.todos.length;
-  document.getElementById('st-done').textContent = S.todos.filter(t=>t.done).length;
+  document.getElementById('st-total').textContent = allTodayCount;
+  document.getElementById('st-done').textContent = allDone;
   document.getElementById('st-inbox').textContent = S.inbox.length;
   document.getElementById('st-pct').textContent = pct + '%';
   document.getElementById('today-cnt').textContent = allTodayCount;
@@ -1847,7 +1854,7 @@ function renderToday() {
   const todoHtml = todayT.map(t=>`
     <div class="item">
       <div class="chk ${t.done?'on':''}" onclick="toggleTodo(${t.id})">${t.done?'✓':''}</div>
-      <div class="it ${t.done?'done':''}">${escHtml(t.text)}</div>
+      <div class="it ${t.done?'done':''}" ondblclick="startEditTodo(${t.id},this)" title="더블클릭하여 편집">${escHtml(t.text)}</div>
       <div class="imeta">
         <span class="tag ${tagCls(t.tag||'action')}">${t.tag||'action'}</span>
         ${t.proj_id?`<span class="tag tgold" style="font-size:8.5px">${projName(t.proj_id)}</span>`:''}
@@ -1915,14 +1922,43 @@ function addTodayTask() {
 }
 function toggleTodo(id) {
   const t=S.todos.find(t=>t.id===id); if(!t) return;
-  t.done=!t.done; t.doneToday=t.done; t.doneTodayDate=t.done?today():null; // [FIX5] 날짜 함께 저장
-  renderToday(); saveData();
-  // 달력이 열려있으면 즉시 갱신
-  if(document.getElementById('page-calendar')?.classList.contains('active')) renderCalendar();
+  t.done=!t.done; t.doneToday=t.done; t.doneTodayDate=t.done?today():null;
+  saveData();
+  // 현재 열려있는 페이지를 즉시 갱신
+  const activePage = document.querySelector('.page.active');
+  if(activePage) refresh(activePage.id.replace('page-',''));
   notify(t.done?'✅ 완료!':'↩️ 완료 취소');
 }
 function delTodo(id) {
-  S.todos=S.todos.filter(t=>t.id!==id); renderToday(); updateBadges(); saveData();
+  S.todos=S.todos.filter(t=>t.id!==id);
+  updateBadges(); saveData();
+  const activePage = document.querySelector('.page.active');
+  if(activePage) refresh(activePage.id.replace('page-',''));
+}
+
+// ── 인라인 편집 ──
+function startEditTodo(id, el) {
+  if(el.querySelector('input')) return; // 이미 편집 중
+  const t = S.todos.find(t=>t.id===id); if(!t) return;
+  const orig = t.text;
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'it-edit-inp';
+  inp.value = orig;
+  el.innerHTML = '';
+  el.appendChild(inp);
+  inp.focus();
+  inp.select();
+  const commit = () => {
+    const v = inp.value.trim();
+    if(v && v !== orig) { t.text = v; saveData(); notify('✏️ 수정됨'); }
+    renderToday();
+  };
+  inp.addEventListener('keyup', e => {
+    if(e.key==='Enter'&&!e.isComposing) commit();
+    if(e.key==='Escape') { renderToday(); }
+  });
+  inp.addEventListener('blur', commit);
 }
 function pickMood(el,e,l) {
   document.querySelectorAll('.mood').forEach(m=>m.classList.remove('sel'));
@@ -2028,9 +2064,9 @@ function renderInbox() {
     else {
       if(tEmpty) tEmpty.style.display='none';
       tList.innerHTML=todos.map(it=>`
-        <div onclick="openAlgo(${it.id})" style="background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--r8);padding:10px 12px;cursor:pointer;transition:border-color .12s;position:relative;min-height:52px;display:flex;flex-direction:column;justify-content:space-between;"
+        <div style="background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:var(--r8);padding:10px 12px;cursor:pointer;transition:border-color .12s;position:relative;min-height:52px;display:flex;flex-direction:column;justify-content:space-between;"
           onmouseover="this.style.borderColor='rgba(212,168,83,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.06)'">
-          <div style="font-size:12.5px;line-height:1.55;color:var(--text);word-break:break-all">${escHtml(it.text)}</div>
+          <div class="ib-text-${it.id}" ondblclick="startEditInbox(${it.id},this)" onclick="if(!event.detail||event.detail<2)openAlgo(${it.id})" title="더블클릭: 편집 / 클릭: 분류" style="font-size:12.5px;line-height:1.55;color:var(--text);word-break:break-all">${escHtml(it.text)}</div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
             <span style="font-family:var(--mono);font-size:8.5px;color:var(--text3)">${it.captured_at||''}</span>
             <span onclick="event.stopPropagation();delInbox(${it.id})" style="font-size:11px;color:var(--text3);cursor:pointer;padding:2px 4px;opacity:.6" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6">✕</span>
@@ -2061,6 +2097,29 @@ function renderInbox() {
   }
 }
 function delInbox(id){S.inbox=S.inbox.filter(i=>i.id!==id);renderInbox();updateBadges();saveData();}
+
+function startEditInbox(id, el) {
+  if(el.querySelector('input')) return;
+  const it = S.inbox.find(i=>i.id===id); if(!it) return;
+  const orig = it.text;
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'it-edit-inp';
+  inp.value = orig;
+  el.innerHTML = '';
+  el.appendChild(inp);
+  inp.focus(); inp.select();
+  const commit = () => {
+    const v = inp.value.trim();
+    if(v && v !== orig) { it.text = v; saveData(); notify('✏️ 수정됨'); }
+    renderInbox();
+  };
+  inp.addEventListener('keyup', e => {
+    if(e.key==='Enter'&&!e.isComposing) commit();
+    if(e.key==='Escape') renderInbox();
+  });
+  inp.addEventListener('blur', commit);
+}
 
 // ══════════════════════════════════════════════
 // CLARIFY — EISENHOWER
@@ -2211,7 +2270,7 @@ function showCtxPicker(q){
     </div>
     <div style="display:flex;gap:6px;align-items:center;margin-bottom:14px">
       <input id="ctx-custom-inp" type="text" placeholder="직접 입력..." style="flex:1;font-size:13px"
-        onkeydown="if(event.key==='Enter'&&!event.isComposing){const v=this.value.trim();if(v)confirmCtx('${q}',v);}">
+        onkeyup="if(event.key==='Enter'&&!event.isComposing){const v=this.value.trim();if(v)confirmCtx('${q}',v);}">
       <button class="btn btn-gold btn-sm" onclick="const v=document.getElementById('ctx-custom-inp').value.trim();if(v)confirmCtx('${q}',v)">확인</button>
     </div>
     <div style="margin-top:4px"><button class="btn btn-ghost btn-sm" onclick="showEisenhower()">← 뒤로</button></div>`;
@@ -3030,7 +3089,7 @@ function renderDayPanel(dateStr){
       </div>
       ${tasksHtml}
       <div class="day-add-row" style="flex-wrap:wrap;gap:5px">
-        <input id="day-add-inp" type="text" placeholder="할 일 추가..." style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter'&&!event.isComposing)addDayTask('${dateStr}')">
+        <input id="day-add-inp" type="text" placeholder="할 일 추가..." style="flex:1;min-width:120px" onkeyup="if(event.key==='Enter'&&!event.isComposing)addDayTask('${dateStr}')">
         <select id="day-add-q" style="font-size:11px">
           <option value="q2">⭐ 중요</option>
           <option value="q1">🔥 긴급</option>
@@ -3419,7 +3478,7 @@ function renderPlanner(){
       </div>
       <div id="plan-items-list">${itemsHtml}</div>
       <div class="arow" style="margin-top:10px">
-        <input id="plan-inp" type="text" placeholder="${cfg.placeholder}" onkeydown="if(event.key==='Enter'&&!event.isComposing)addPlanItem('${scope}')">
+        <input id="plan-inp" type="text" placeholder="${cfg.placeholder}" onkeyup="if(event.key==='Enter'&&!event.isComposing)addPlanItem('${scope}')">
         <select id="plan-priority">
           <option value="high">🔴 높음</option>
           <option value="mid" selected>🟡 보통</option>
@@ -3907,10 +3966,6 @@ function populateCat(id){
 document.addEventListener('DOMContentLoaded', async () => {
   const now=new Date();
   S.calYear=now.getFullYear();S.calMonth=now.getMonth();
-  // 토큰 없으면 모달 표시
-  if (!localStorage.getItem('gh_token')) {
-    setTimeout(() => showTokenModal(), 800);
-  }
   const loaded = await loadData();
   if(loaded) setTimeout(()=>notify('☁️ 데이터 동기화 완료'),500);
   // [FIX5] doneToday 날짜 변경 시 초기화 — 오늘 날짜가 아닌 항목의 doneToday 플래그 리셋
@@ -3924,12 +3979,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadTodayLog();
   renderToday();
   updateBadges();
-  if(!S.setupDone) renderSetup();
+  if(!S.setupDone) {
+    nav('setup', document.querySelector('.sbi[onclick*="setup"]'));
+  }
+  // 토큰 없으면 온보딩 완료 후 안내 (신규 사용자는 셋업 먼저)
+  if (!localStorage.getItem('gh_token') && S.setupDone) {
+    setTimeout(() => showTokenModal(), 1200);
+  }
 
   // Keyboard shortcuts
-  document.getElementById('today-inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing)addTodayTask();});
-  document.getElementById('ib-todo-inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.ctrlKey)capture('todo');});
-  document.getElementById('ib-note-title').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.ctrlKey)capture('note');});
+  document.getElementById('today-inp').addEventListener('keyup',e=>{if(e.key==='Enter'&&!e.isComposing)addTodayTask();});
+  document.getElementById('ib-todo-inp').addEventListener('keyup',e=>{if(e.key==='Enter'&&!e.isComposing&&e.ctrlKey)capture('todo');});
+  document.getElementById('ib-note-title').addEventListener('keyup',e=>{if(e.key==='Enter'&&!e.isComposing&&e.ctrlKey)capture('note');});
   // 백업 리마인더 + 마감 임박 알림
   checkBackupReminder();
   setTimeout(checkUpcomingDeadlines, 1500);
